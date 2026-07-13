@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MicrosoftHttpService } from "src/http/http.microsoft.service";
 import { MicrosofGraphRpcService } from "src/microsoftgraphropc/microsoftropc.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class TeamsService {
@@ -10,19 +11,89 @@ export class TeamsService {
         private readonly http: MicrosoftHttpService,
         private readonly microsoftGraphRpcService: MicrosofGraphRpcService,
         private readonly configService: ConfigService,
+        private readonly prisma: PrismaService,
     ) { }
 
-    async EnviaMensagem() {
-        const nomeChat = "Análise de risco | Comitê";
-        const usuario = await this.listaUsuariosPorEmail(this.configService.get<string>('MICROSOFT_GRAPH_ROPC_USER'));
-        const chats = await this.listaChatUsuario(usuario.id);
-        const chatSelecionado = chats.find((chat: any) => chat.topic === nomeChat);
-
-        if (!chatSelecionado) {
-            throw new BadRequestException("Chat não encontrado");
+    async EnviaMensagem(nomeChat: string, mensagem: string, token: string, tokenNome?: string) {
+        if (!nomeChat || !mensagem) {
+            throw new BadRequestException("Informe 'chat' (nome do grupo) e 'mensagem'.");
         }
 
-        await this.enviarMensagemChat(chatSelecionado.id, "Teste de mensagem");
+        try {
+            const chats = await this.listaTodosChats();
+            const alvo = nomeChat.trim().toLowerCase();
+            const chatSelecionado = chats.find((c: any) => (c.topic || "").trim().toLowerCase() === alvo);
+
+            if (!chatSelecionado) {
+                const disponiveis = chats.filter((c: any) => c.topic).map((c: any) => c.topic);
+                throw new BadRequestException(
+                    `Chat "${nomeChat}" não encontrado. A conta remetente precisa ser membro do grupo. ` +
+                    `Grupos disponíveis: ${disponiveis.join(" | ") || "(nenhum grupo com nome)"}`
+                );
+            }
+
+            const resultado = await this.enviarMensagemChat(chatSelecionado.id, mensagem);
+
+            await this.registrarLog({
+                chat: chatSelecionado.topic,
+                mensagem,
+                status: "SUCESSO",
+                messageId: resultado?.id,
+                token,
+                tokenNome,
+            });
+
+            return { ok: true, chat: chatSelecionado.topic, messageId: resultado?.id };
+        } catch (error: any) {
+            // Auditoria tambem das tentativas que falharam
+            await this.registrarLog({
+                chat: nomeChat,
+                mensagem,
+                status: "ERRO",
+                erro: error?.response?.data ? JSON.stringify(error.response.data) : error?.message,
+                token,
+                tokenNome,
+            });
+            throw error;
+        }
+    }
+
+    // Grava um registro de auditoria de uma mensagem disparada (nunca derruba o fluxo)
+    private async registrarLog(dados: {
+        chat: string;
+        mensagem: string;
+        status: string;
+        messageId?: string;
+        erro?: string;
+        token: string;
+        tokenNome?: string;
+    }) {
+        try {
+            await this.prisma.messageLog.create({ data: dados });
+        } catch (e: any) {
+            console.error("Falha ao gravar log de auditoria:", e?.message);
+        }
+    }
+
+    // Lista TODOS os chats do usuário autenticado, seguindo a paginação do Graph.
+    async listaTodosChats() {
+        const token = await this.microsoftGraphRpcService.getAccessToken();
+        let url = "https://graph.microsoft.com/v1.0/me/chats?$top=50";
+        const todos: any[] = [];
+
+        try {
+            while (url) {
+                const result = await this.http.axios.get(url, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                todos.push(...result.data.value);
+                url = result.data["@odata.nextLink"] || null;
+            }
+            return todos;
+        } catch (error: any) {
+            console.log(error.response?.data || error.message);
+            throw new BadRequestException("Erro ao listar os chats da conta remetente");
+        }
     }
 
     async listaUsuariosPorEmail(email: string) {

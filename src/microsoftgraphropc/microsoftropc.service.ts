@@ -25,7 +25,10 @@ export class MicrosofGraphRpcService {
     // Função para obter o token usando o fluxo ROPC (sem interação com o usuário)
     async loginWithUsernameAndPassword() {
         const tokenRequest = {
-            scopes: ['user.read'],
+            // Escopos delegados necessarios para o fluxo do Teams:
+            // - User.ReadBasic.All: buscar o usuario por e-mail (/users?$filter=mail eq ...)
+            // - Chat.ReadWrite + ChatMessage.Send: listar chats e enviar mensagens
+            scopes: ['User.Read', 'User.ReadBasic.All', 'Chat.ReadWrite', 'ChatMessage.Send'],
             username: this.configService.get<string>('MICROSOFT_GRAPH_ROPC_USER'),
             password: this.configService.get<string>('MICROSOFT_GRAPH_ROPC_PASSWORD'),
         };

@@ -15,8 +15,36 @@ datasource db {
 
 model valuation {
   id        Int      @id @default(autoincrement())
-  videoId   String   
+  videoId   String
   local     String
   descricao String
   createdAt DateTime @default(now())
+}
+
+// Tokens de acesso: quem quiser enviar mensagem precisa mandar um token valido e ativo.
+model ApiToken {
+  id        Int          @id @default(autoincrement())
+  token     String       @unique
+  nome      String // descricao de quem/qual sistema usa este token
+  ativo     Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  logs      MessageLog[]
+}
+
+// Auditoria: registra TODA mensagem disparada, com o token de quem enviou.
+model MessageLog {
+  id        Int      @id @default(autoincrement())
+  chat      String // nome do grupo alvo
+  mensagem  String   @db.Text
+  status    String // "SUCESSO" | "ERRO"
+  messageId String? // id da mensagem no Teams (quando sucesso)
+  erro      String?  @db.Text // detalhe do erro (quando falha)
+  token     String // token usado no envio (auditoria)
+  tokenNome String? // nome do token no momento do envio
+  createdAt DateTime @default(now())
+
+  apiToken ApiToken @relation(fields: [token], references: [token])
+
+  @@index([token])
+  @@index([createdAt])
 }

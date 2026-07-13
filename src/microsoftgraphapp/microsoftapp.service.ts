@@ -25,7 +25,14 @@ export class MicrosoftAppService {
     }
 
     async onModuleInit() {
-        await this.initializeAccessToken();
+        try {
+            await this.initializeAccessToken();
+        } catch (error) {
+            // Nao derruba a aplicacao no boot caso o fluxo app-only (client credentials)
+            // ainda nao esteja configurado. O token e obtido sob demanda quando o OneDrive
+            // e usado (OneDriveService chama initializeAccessToken antes de cada requisicao).
+            console.warn('[MicrosoftAppService] Token app-only nao obtido no boot:', error?.message);
+        }
     }
 
     async initializeAccessToken() {
