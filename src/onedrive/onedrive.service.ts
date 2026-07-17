@@ -24,7 +24,7 @@ export class OneDriveService {
                 }
             });
             return retorno.data.value;
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.response)
             fs.appendFileSync('error.txt', JSON.stringify(error) + '\n');
             throw new BadRequestException(`Erro ao listar pastas do OneDrive: ${error.message}`);
@@ -49,7 +49,7 @@ export class OneDriveService {
                 const nextPage = res.data['@odata.nextLink'] || null;
                 url = nextPage || null;
 
-            } catch (error) {
+            } catch (error: any) {
                 fs.appendFileSync('error.txt', JSON.stringify(error) + '\n');
                 throw new BadRequestException(`Erro ao listar arquivos da pasta do OneDrive: ${error.message}`);
             }
@@ -87,7 +87,8 @@ export class OneDriveService {
                 const writer = fs.createWriteStream(filePath);
 
                 let downloadedBytes = 0;
-                const totalBytes = parseInt(response.headers['content-length'], 10);
+                const contentLength = response.headers['content-length'];
+                const totalBytes = typeof contentLength === 'string' ? parseInt(contentLength, 10) : Number(contentLength);
 
                 response.data.on('data', (chunk: Buffer) => {
                     downloadedBytes += chunk.length;
@@ -121,12 +122,12 @@ export class OneDriveService {
                     console.error(`Erro ao salvar o arquivo ${item.name}:`, err);
                 });
 
-                await new Promise((resolve, reject) => {
-                    writer.on('finish', resolve);
+                await new Promise<void>((resolve, reject) => {
+                    writer.on('finish', () => resolve());
                     writer.on('error', reject);
                 });
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Erro ao baixar o arquivo ${item.name}:`, error);
                 fs.appendFileSync('error.txt', JSON.stringify(error) + '\n');
                 throw new BadRequestException(`Erro ao baixar arquivo ${item.name}: ${error?.message}`);

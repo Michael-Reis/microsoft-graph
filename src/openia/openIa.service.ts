@@ -55,7 +55,7 @@ export class OpenIaService {
 
             // console.log(transcrito);
             // fs.writeFileSync("transcricao.log", JSON.stringify(transcrito));
-        } catch (error) {
+        } catch (error: any) {
             console.error(error.response.data);
         }
 

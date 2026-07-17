@@ -20,7 +20,7 @@ export class MicrosoftDelegatedController {
         try {
             await this.microsoftDelegatedService.exchangeCodeForToken(code);
             return { message: 'Autenticado com sucesso', accessToken: this.microsoftDelegatedService.getAccessToken() };
-        } catch (error) {
+        } catch (error: any) {
             return { message: 'Erro ao autenticar', error: error.message };
         }
     }

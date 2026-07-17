@@ -1,3 +1,98 @@
+# ORIT Microsoft Integration
+
+> Backend NestJS para integração com Microsoft Graph, Teams e OneDrive, com autenticação por token e suporte a Prisma.
+
+## Tecnologias
+
+- Node.js + NestJS
+- TypeScript
+- Prisma (Postgres/SQLite - conforme `DATABASE_URL`)
+- Microsoft Graph (app + delegated + ROPC)
+
+## Estrutura principal
+
+- Código fonte: src/
+- Módulos Microsoft: src/microsoftgraphapp, src/microsoftgraphdelegated, src/microsoftgraphropc
+- Teams: src/teams
+- OneDrive: src/onedrive
+- Prisma: prisma/schema.prisma
+
+Arquivos úteis:
+
+- [scripts/setup-entra-teams-app.ps1](scripts/setup-entra-teams-app.ps1) — script de setup para Entra/Teams
+- [prisma/schema.prisma](prisma/schema.prisma)
+
+## Requisitos
+
+- Node.js 16+ (recomendado 18+)
+- Yarn ou npm
+- Um banco de dados acessível via `DATABASE_URL`
+
+## Variáveis de ambiente (exemplos)
+
+Defina um arquivo `.env` na raiz com pelo menos estas variáveis:
+
+- `DATABASE_URL` — string de conexão para o Prisma
+- `PORT` — porta do servidor (ex: 3000)
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` — credenciais do app Azure AD
+- `MICROSOFT_TENANT_ID` — tenant ID
+- `TEAMS_WEBHOOK_URL` — (se usado)
+
+Adapte conforme os módulos que você estiver usando.
+
+## Instalação
+
+Instale dependências e gere o client do Prisma:
+
+```bash
+npm install
+npx prisma generate
+```
+
+## Banco de dados / Prisma
+
+Aplicar migrações de desenvolvimento:
+
+```bash
+npx prisma migrate dev --name init
+npx prisma studio
+```
+
+## Rodando em desenvolvimento
+
+```bash
+npm run start:dev
+```
+
+Comandos úteis:
+
+- `npm run build` — build do projeto
+- `npm run start` — rodar build
+- `npm run test` / `npm run test:e2e` — testes
+
+## Endpoints relevantes
+
+- Controller de Teams: [src/teams/teams.controller.ts](src/teams/teams.controller.ts)
+- Token endpoints e guards: [src/token](src/token)
+- OpenAI / GPT: [src/openia](src/openia)
+
+Explore o código fonte para entender fluxos de autenticação (app vs delegated vs ropc).
+
+## Executando localmente com Microsoft Graph
+
+1. Registre um app no Azure AD (App registrations).
+2. Configure `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID`.
+3. Se precisar de permissões delegadas, siga o fluxo de OAuth2/consentimento.
+4. Use o script [scripts/setup-entra-teams-app.ps1](scripts/setup-entra-teams-app.ps1) para acelerar configurações no tenant (PowerShell).
+
+## Contribuição
+
+- Abra issues e PRs para melhorias.
+- Mantenha testes e atualize `prisma/schema.prisma` quando alterar modelos.
+
+## Licença
+
+Projeto sem licença explícita — adicione um arquivo `LICENSE` conforme necessário.
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

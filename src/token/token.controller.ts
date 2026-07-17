@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/c
 import { TokenService } from "./token.service";
 import { AdminGuard } from "./admin.guard";
 
-// Gerenciador de tokens. Todas as rotas exigem a chave de admin (header x-admin-key).
+// Gerenciador de tokens. Todas as rotas exigem a chave de admin (Authorization: Bearer <ADMIN_API_KEY>).
 @Controller("tokens")
 @UseGuards(AdminGuard)
 export class TokenController {

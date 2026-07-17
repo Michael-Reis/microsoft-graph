@@ -114,7 +114,7 @@ export class TeamsService {
 
             return data;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.response.data)
             throw new BadRequestException(error.message || "Erro ao buscar usuário");
         }
@@ -140,7 +140,7 @@ export class TeamsService {
 
             return chats;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.message || "Erro ao buscar chat");
         }
     }
@@ -162,7 +162,7 @@ export class TeamsService {
 
             return equipes;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.message || "Erro ao buscar equipe");
         }
 
@@ -185,7 +185,7 @@ export class TeamsService {
 
             return canais;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.message || "Erro ao buscar canal");
         }
     }
@@ -195,6 +195,7 @@ export class TeamsService {
             const token = await this.microsoftGraphRpcService.getAccessToken();
             const result = await this.http.axios.post(`https://graph.microsoft.com/v1.0/teams/${idEquipe}/channels/${idCanal}/messages`, {
                 body: {
+                    contentType: this.tipoConteudo(mensagem),
                     content: mensagem
                 }
             }, {
@@ -205,7 +206,7 @@ export class TeamsService {
 
             return result.data;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.response?.data || "Erro ao enviar mensagem");
             throw new BadRequestException(error.message || "Erro ao enviar mensagem");
         }
@@ -230,11 +231,17 @@ export class TeamsService {
 
             console.log("Canal criado com sucesso");
             return result.data;
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.response?.data || "Erro ao criar canal");
             throw new BadRequestException(error.message || "Erro ao criar canal");
         }
 
+    }
+
+    // Se a mensagem contem tags HTML (ex.: <b>, <br>), envia como "html" para o Teams
+    // renderizar; sem tags, envia como "text" (preserva quebras de linha \n).
+    private tipoConteudo(mensagem: string): "html" | "text" {
+        return /<\/?[a-z][^>]*>/i.test(mensagem) ? "html" : "text";
     }
 
     async enviarMensagemChat(idChat: string, mensagem: string) {
@@ -242,6 +249,7 @@ export class TeamsService {
             const token = await this.microsoftGraphRpcService.getAccessToken();
             const result = await this.http.axios.post(`https://graph.microsoft.com/v1.0/chats/${idChat}/messages`, {
                 body: {
+                    contentType: this.tipoConteudo(mensagem),
                     content: mensagem
                 }
             }, {
@@ -252,7 +260,7 @@ export class TeamsService {
 
             return result.data;
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error.response?.data || "Erro ao enviar mensagem");
             throw new BadRequestException(error.message || "Erro ao enviar mensagem");
         }
