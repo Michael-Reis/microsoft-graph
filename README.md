@@ -1,4 +1,4 @@
-# ORIT Microsoft Integration
+# Microsoft Integration
 
 > Backend NestJS para integração com Microsoft Graph, Teams e OneDrive, com autenticação por token e suporte a Prisma.
 
